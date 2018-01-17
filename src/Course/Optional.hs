@@ -93,9 +93,9 @@ bindOptional f o =
   Optional a
   -> Optional a
   -> Optional a
--- (<+>) (Full a) _ = Full a
--- (<+>) Empty (Full a) = Full a
--- (<+>) Empty Empty = Empty
+(<+>) (Full a) _ = Full a
+(<+>) Empty (Full a) = Full a
+(<+>) Empty Empty = Empty
 
 -- (<+>) Empty x = x
 -- (<+>) x@(Full _) _ = x
