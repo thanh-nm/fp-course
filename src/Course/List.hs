@@ -39,6 +39,10 @@ data List t =
 -- Right-associative -- make Cons right associative. 5 is the priorty of the operator (:.). (+) has priority 6
 infixr 5 :.
 
+-- define List is instance of Functor
+-- instance Functor List where
+--  (<$>) = map
+
 instance Show t => Show (List t) where
   show = show . foldRight (:) []
 
@@ -49,10 +53,27 @@ infinity =
   let inf x = x :. inf (x+1)
   in inf 0
 
+
+ {-FOLDRIGHT and FOLDLEFT:
+  put f between 2 element of the list, if list is Nil,
+  apply default value (which is the 2nd arugment)-}
+
 -- functions over List that you may consider using
 foldRight :: (a -> b -> b) -> b -> List a -> b
 foldRight _ b Nil      = b
 foldRight f b (h :. t) = f h (foldRight f b t)
+
+
+
+-- FoldLeft has an order of execution: left to right
+-- (b -> a -> b) -> b -> List a -> b
+-- f                z    list
+-- f = ++
+
+-- var (type B) z = Nil
+-- foreach (elem : list) {
+--    z = add(elem, z)
+-- }
 
 foldLeft :: (b -> a -> b) -> b -> List a -> b
 foldLeft _ b Nil      = b
@@ -71,12 +92,18 @@ foldLeft f b (h :. t) = let b' = f b h in b' `seq` foldLeft f b' t
 -- prop> x `headOr` infinity == 0
 --
 -- prop> x `headOr` Nil == x
-headOr ::
-  a
-  -> List a
-  -> a
-headOr a (h :. _) = h
-headOr a Nil = a
+headOr :: a -> List a -> a
+-- headOr a (h :. _) = h
+-- headOr a Nil = a
+
+-- OPTION: headOr with foldRight
+-- (1 :. 2:. Nil)
+-- head of list : 1
+-- 3
+-- :t const
+-- const :: a -> b -> a
+-- 1 `const` 2 `const` 3
+headOr x l = foldRight const x l
 
 -- | The product of the elements of a list.
 --
@@ -229,6 +256,9 @@ flatten = foldRight (++) Nil
 -- TODO
 --flatten = foldRight ((++) . id) Nil
 
+-- OPTION with flatMap
+-- flatten l = flatMap id l
+
   -- foldR: replace Cons with append and Nil with Nil
 
 -- | Map a function then flatten to a list.
@@ -362,7 +392,7 @@ reverse0 acc Nil = acc
 reverse0 acc (h :.t) = reverse0 (h :. acc) t
 
 -- reversee = foldLeft (\r el -> (:.) el r) Nil
-reversee l = foldLeft (flip (:.)) Nil l 
+reversee l = foldLeft (flip (:.)) Nil l
 
 
 -- | Produce an infinite `List` that seeds with the given value at its head,

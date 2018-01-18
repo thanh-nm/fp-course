@@ -43,14 +43,12 @@ instance Applicative ExactlyOne where
   pure ::
     a
     -> ExactlyOne a
-  pure =
-    error "todo: Course.Applicative pure#instance ExactlyOne"
-  (<*>) :: 
+  pure = ExactlyOne
+  (<*>) ::
     ExactlyOne (a -> b)
     -> ExactlyOne a
     -> ExactlyOne b
-  (<*>) =
-    error "todo: Course.Applicative (<*>)#instance ExactlyOne"
+  (<*>) (ExactlyOne f) (ExactlyOne a) = ExactlyOne (f a)
 
 -- | Insert into a List.
 --
@@ -81,13 +79,13 @@ instance Applicative List where
 --
 -- >>> (+1) <$$> (1 :. 2 :. 3 :. Nil)
 -- [2,3,4]
+-- fmap
 (<$$>) ::
   Applicative f =>
   (a -> b)
   -> f a
   -> f b
-(<$$>) =
-  error "todo: Course.Applicative#(<$$>)"
+(<$$>) f x = pure f <*> x --lift0
 
 -- | Insert into an Optional.
 --
@@ -105,14 +103,14 @@ instance Applicative Optional where
   pure ::
     a
     -> Optional a
-  pure =
-    error "todo: Course.Applicative pure#instance Optional"
+  pure = Full
   (<*>) ::
     Optional (a -> b)
     -> Optional a
     -> Optional b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance Optional"
+  (<*>) = \optf opta -> bindOptional (\f -> mapOptional f opta) optf
+  -- (<*>) Empty _ = Empty
+  -- (<*>) (Full f) o = mapOptional f o
 
 -- | Insert into a constant function.
 --
@@ -133,17 +131,28 @@ instance Applicative Optional where
 --
 -- prop> pure x y == x
 instance Applicative ((->) t) where
-  pure ::
-    a
-    -> ((->) t a)
-  pure =
-    error "todo: Course.Applicative pure#((->) t)"
-  (<*>) ::
-    ((->) t (a -> b))
-    -> ((->) t a)
-    -> ((->) t b)
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance ((->) t)"
+  -- pure :: a -> ((->) t a)
+  pure :: a -> t -> a
+  pure = const
+  -- (<*>) :: ((->) t (a -> b)) -> ((->) t a) -> ((->) t b)
+  (<*>) :: (t -> a -> b) -> (t -> a) -> t -> b
+  (<*>) ft_a_b ft_a t =  ft_a_b t (ft_a t)
+  (<*>) f g t =  f t (g t)
+
+
+  -- (g -> b) -> (g -> t) -> b
+
+  -- function that take t and return b
+
+  -- (ft_a_b t) : a -> b
+
+  -- ft_a t -> a
+
+  --  ft_a . ft_a_b -> (t -> a)
+
+
+  -- ft_a_b t (ft_a t) returns b
+  -- (<$>) fa2b ft2a =  \t -> fa2b (ft2a t)
 
 
 -- | Apply a binary function in the environment.
@@ -171,8 +180,12 @@ lift2 ::
   -> f a
   -> f b
   -> f c
-lift2 =
-  error "todo: Course.Applicative#lift2"
+  -- write lift2 using lift1 and apply. lift1 is fmap
+  -- <$> :: (a -> b) -> f a -> f b
+lift2 f2a2b2c a b = (f2a2b2c <$> a) <*> b
+-- (f2a2b2c <$> a) is f (b -> c)
+
+
 
 -- | Apply a ternary function in the environment.
 --
@@ -198,13 +211,20 @@ lift2 =
 -- 138
 lift3 ::
   Applicative f =>
-  (a -> b -> c -> d)
+  -- (a -> b -> c -> d)
+  (a -> b -> (c -> d))
   -> f a
   -> f b
   -> f c
   -> f d
-lift3 =
-  error "todo: Course.Applicative#lift3"
+  -- write lift3 using lift2
+  -- lift2 :: (a -> b -> c) -> f a -> f b -> f c
+  -- <*> :: f (a -> b) -> f a -> f b
+lift3 fabcd a b c = (lift2 fabcd a b) <*> c
+
+-- lift2 fabcd a b :: f (c -> d)
+-- fabcd:: a -> b -> (c -> d)
+
 
 -- | Apply a quaternary function in the environment.
 --
@@ -236,8 +256,8 @@ lift4 ::
   -> f c
   -> f d
   -> f e
-lift4 =
-  error "todo: Course.Applicative#lift4"
+lift4 fabcde a b c d = (lift3 fabcde a b c) <*> d
+-- lift3 fabcd a b :: f (d -> e)
 
 -- | Apply, discarding the value of the first argument.
 -- Pronounced, right apply.
@@ -258,10 +278,7 @@ lift4 =
 --
 -- prop> Full x *> Full y == Full y
 (*>) ::
-  Applicative f =>
-  f a
-  -> f b
-  -> f b
+  Applicative f => f a -> f b -> f b
 (*>) =
   error "todo: Course.Applicative#(*>)"
 
@@ -288,8 +305,11 @@ lift4 =
   f b
   -> f a
   -> f b
-(<*) =
-  error "todo: Course.Applicative#(<*)"
+  -- lift2 :: (a -> b -> c) -> f a -> f b -> f c
+(<*) b a = lift2 flipConst a b
+
+flipConst :: a -> b -> b
+flipConst = flip const
 
 -- | Sequences a list of structures to a structure of list.
 --
@@ -307,12 +327,26 @@ lift4 =
 --
 -- >>> sequence ((*10) :. (+2) :. Nil) 6
 -- [60,8]
+-- https://qfpl.io/posts/fp-cheat-sheet/
 sequence ::
   Applicative f =>
   List (f a)
   -> f (List a)
-sequence =
-  error "todo: Course.Applicative#sequence"
+-- sequence Nil = pure Nil
+-- sequence (h :. t) = lift2 (:.) h (sequence t)
+-- h :: fa
+-- t :: List (f a) -- normally if we have head and tail. We recurse tail => sequence t :: f (List a)
+-- ? :: f (List a)
+
+--Option 2:
+sequence = foldRight (lift2 (:.)) (pure Nil)
+
+
+
+
+
+
+
 
 -- | Replicate an effect a given number of times.
 --

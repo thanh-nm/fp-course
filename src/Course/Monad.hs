@@ -101,20 +101,23 @@ instance Monad Optional where
     (a -> Optional b)
     -> Optional a
     -> Optional b
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance Optional"
+  (=<<) = bindOptional
 
 -- | Binds a function on the reader ((->) t).
 --
 -- >>> ((*) =<< (+10)) 7
 -- 119
 instance Monad ((->) t) where
+  -- (=<<) ::
+  --   (a -> ((->) t b))
+  --   -> ((->) t a)
+  --   -> ((->) t b)
   (=<<) ::
-    (a -> ((->) t b))
-    -> ((->) t a)
-    -> ((->) t b)
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance ((->) t)"
+    (a -> t -> b)
+    -> (t -> a)
+    -> t -> b
+
+  (=<<) fatb fta t = fatb (fta t) t
 
 -- | Flattens a combined structure to a single structure.
 --
@@ -133,8 +136,7 @@ join ::
   Monad f =>
   f (f a)
   -> f a
-join =
-  error "todo: Course.Monad#join"
+join = (=<<) id
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
@@ -147,8 +149,7 @@ join =
   f a
   -> (a -> f b)
   -> f b
-(>>=) =
-  error "todo: Course.Monad#(>>=)"
+(>>=) = flip (=<<)
 
 infixl 1 >>=
 
@@ -163,8 +164,7 @@ infixl 1 >>=
   -> (a -> f b)
   -> a
   -> f c
-(<=<) =
-  error "todo: Course.Monad#(<=<)"
+(<=<) f_bfc f_afb a = f_afb a >>= f_bfc
 
 infixr 1 <=<
 

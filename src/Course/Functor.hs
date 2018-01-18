@@ -13,11 +13,14 @@ import qualified Prelude as P(fmap)
 -- | All instances of the `Functor` type-class must satisfy two laws. These laws
 -- are not checked by the compiler. These laws are given as:
 --
--- * The law of identity
+-- * The law of identity: if we fmap an id with a functor, it should return the functor itself
 --   `∀x. (id <$> x) ≅ x`
 --
--- * The law of composition
+-- * The law of composition:
+-- if we fmap 2 functions to a functor, we can compose a new combined function and apply it to the functor (better performance)
 --   `∀f g x.(f . g <$> x) ≅ (f <$> (g <$> x))`
+
+-- kind of Functor must be * -> * (type to a type)
 class Functor f where
   -- Pronounced, eff-map.
   (<$>) ::
@@ -41,8 +44,7 @@ instance Functor ExactlyOne where
     (a -> b)
     -> ExactlyOne a
     -> ExactlyOne b
-  (<$>) =
-    error "todo: Course.Functor (<$>)#instance ExactlyOne"
+  (<$>) f (ExactlyOne a) = ExactlyOne (f a)
 
 -- | Maps a function on the List functor.
 --
@@ -56,8 +58,7 @@ instance Functor List where
     (a -> b)
     -> List a
     -> List b
-  (<$>) =
-    error "todo: Course.Functor (<$>)#instance List"
+  (<$>) = map
 
 -- | Maps a function on the Optional functor.
 --
@@ -71,20 +72,22 @@ instance Functor Optional where
     (a -> b)
     -> Optional a
     -> Optional b
-  (<$>) =
-    error "todo: Course.Functor (<$>)#instance Optional"
+  (<$>) = mapOptional
 
 -- | Maps a function on the reader ((->) t) functor.
 --
 -- >>> ((+1) <$> (*2)) 8
 -- 17
+-- e.g. t is Int,  map Int -> a to Int -> b
 instance Functor ((->) t) where
   (<$>) ::
     (a -> b)
     -> ((->) t a)
     -> ((->) t b)
-  (<$>) =
-    error "todo: Course.Functor (<$>)#((->) t)"
+  -- (<$>) f g = f . g -- t -> a -> b -> t b
+  (<$>) = (.)
+  -- (<$>) f g =  \t -> f (g t)
+  -- (<$>) fa2b ft2a =  \t -> fa2b (ft2a t)
 
 -- | Anonymous map. Maps a constant value on a functor.
 --
@@ -99,8 +102,9 @@ instance Functor ((->) t) where
   a
   -> f b
   -> f a
-(<$) =
-  error "todo: Course.Functor#(<$)"
+(<$) a x = (<$>) (\b -> a) x
+--   (<$>) :: (a -> b) -> f a -> f b
+-- x is f b
 
 -- | Anonymous map producing unit value.
 --
@@ -119,8 +123,9 @@ void ::
   Functor f =>
   f a
   -> f ()
-void =
-  error "todo: Course.Functor#void"
+-- void x = (<$>) (\a -> ()) x
+void x = (<$>) (const ()) x
+  -- error "todo: Course.Functor#void"
 
 -----------------------
 -- SUPPORT LIBRARIES --
