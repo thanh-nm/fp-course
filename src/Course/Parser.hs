@@ -198,8 +198,21 @@ bindParser ::
   (a -> Parser b)
   -> Parser a
   -> Parser b
-bindParser =
-  error "todo: Course.Parser#bindParser"
+bindParser f pa = P (\input -> case parse pa input of
+                                UnexpectedEof -> UnexpectedEof
+                                ExpectedEof j -> ExpectedEof j
+                                UnexpectedChar c -> UnexpectedChar c
+                                UnexpectedString s -> UnexpectedString s
+                                Result j a -> parse (f a) j)
+                                
+
+
+-- f :: a -> Parser b
+-- f a -> Parser b
+-- parse pa :: Input -> ParseResult a
+-- i :: Input
+
+
 
 -- | Return a parser that puts its input into the given parser and
 --
