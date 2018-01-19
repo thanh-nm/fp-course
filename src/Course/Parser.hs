@@ -379,7 +379,7 @@ satisfy predicate = character >>= lift3 bool unexpectedCharParser pure predicate
 --                                           False -> unexpectedCharParser c-- P (\i -> UnexpectedChar c)
 
 -- satisfy predicate = do
---   c <- character
+--   c <- character -- c because it's a syntactic sugar of (=<<) :: Parser Char -> (c -> Parser Char) -> Parser Char
 --   case predicate c of
 --     True -> valueParser c -- P (\i -> Result i c)
 --     False -> unexpectedCharParser c-- P (\i -> UnexpectedChar c)
